@@ -35,4 +35,4 @@ Follow these steps to run this project on your local machine:
 
 1. Clone the repository:
    `bash
-   git clone https://github.com/your-username/hotel-booking.git
+   git clone https://github.com/amardelil/hotel-booking.git
