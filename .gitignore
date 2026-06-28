@@ -1,0 +1,16 @@
+# Ignore environment variables (contains passwords/keys)
+.env
+
+# Ignore OS junk files
+.DS_Store
+Thumbs.db
+
+# Ignore IDE folders
+.vscode/
+.idea/
+
+# Ignore logs
+storage/logs/*.log
+
+# Ignore composer dependencies 
+/vendor/
