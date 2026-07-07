@@ -79,19 +79,6 @@ if (file_exists($controller_file)) {
         require_once $error_view;
     } else {
         header("HTTP/1.0 404 Not Found");
-        // --- ADMIN ROUTING (Fixes the Admin 404) ---
-if ($route === 'admin' || strpos($route, 'admin/') === 0) {
-    $admin_page = $segments[1] ?? 'login';
-    $admin_file = ROOT_DIR . "/app/views/admin/{$admin_page}.php";
-    if (file_exists($admin_file)) {
-        include ROOT_DIR . '/app/views/layout/header.php';
-        include $admin_file;
-        include ROOT_DIR . '/app/views/layout/footer.php';
-    } else {
-        echo "Admin page '{$admin_page}' not found. Create app/views/admin/{$admin_page}.php";
-    }
-    exit;
-}
         echo "404 - Page Not Found";
     }
 }
