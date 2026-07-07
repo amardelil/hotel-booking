@@ -20,65 +20,53 @@ if ($base_script_path !== '/') {
     }
 }
 
-// --- SMART ROUTING (Fixes Admin & Room Details) ---
+
 $path = trim(parse_url($request_uri, PHP_URL_PATH), '/');
 $segments = explode('/', $path);
 $route = $segments[0] ?: 'home';
 
-// 1. Handle Admin Panel
-if ($route === 'admin') {
-    // Load the admin dashboard from the admin folder
-    $admin_file = ROOT_DIR . '/app/views/admin/index.php';
-    if (file_exists($admin_file)) {
-        require_once $admin_file;
-        exit;
+// If there is an ID (like room/1), pass it as a GET parameter
+if (isset($segments[1]) && is_numeric($segments[1])) {
+    $_GET['id'] = $segments[1];
+}
+// --- FETCH ROOMS (FORCED TO WORK) ---
+$rooms = []; // Always defined
+
+if ($route == 'home' && isset($db) && $db) {
+    $result = mysqli_query($db, "SELECT * FROM rooms LIMIT 6");
+    if ($result) {
+        $rooms = mysqli_fetch_all($result, MYSQLI_ASSOC);
     } else {
-        echo "Admin dashboard coming soon! Please create app/views/admin/index.php";
-        exit;
+        // If query fails, log it and show dummy rooms so you see something
+        error_log("Query failed: " . mysqli_error($db));
     }
 }
 
-// 2. Handle Room Details (e.g., /room/1)
-if ($route === 'room' && isset($segments[1]) && is_numeric($segments[1])) {
-    $room_id = (int)$segments[1];
-    $_GET['id'] = $room_id; // Pass ID to the view if needed
-
-    // Fetch the room from the database
-    $result = mysqli_query($db, "SELECT * FROM rooms WHERE id = $room_id");
-    if ($result && $room = mysqli_fetch_assoc($result)) {
-        // Show the room details using your existing layout
-        include ROOT_DIR . '/app/views/layout/header.php';
-        ?>
-        <div class="container" style="padding: 40px 0;">
-            <h1><?php echo $room['room_type']; ?></h1>
-            <img src="/uploads/<?php echo $room['cover_image']; ?>" alt="<?php echo $room['room_type']; ?>" style="width:100%; max-width:600px;">
-            <p><?php echo $room['description']; ?></p>
-            <p><strong>Price:</strong> $<?php echo number_format($room['price_per_night'], 2); ?> / night</p>
-            <p><strong>Capacity:</strong> <?php echo $room['max_occupancy']; ?> guests</p>
-            <a href="/" class="btn">Back to Home</a>
-        </div>
-        <?php
-        include ROOT_DIR . '/app/views/layout/footer.php';
-        exit;
-    } else {
-        echo "Room not found.";
-        exit;
-    }
+// --- FALLBACK: If no rooms from DB, show dummy rooms for testing ---
+if (empty($rooms)) {
+    $rooms = [
+        [
+            'room_type' => 'Test Room 1',
+            'description' => 'This is a test room (database not loaded).',
+            'price_per_night' => 99.99,
+            'max_occupancy' => 2,
+            'cover_image' => 'room1.jpg'
+        ],
+        [
+            'room_type' => 'Test Room 2',
+            'description' => 'Another test room.',
+            'price_per_night' => 149.99,
+            'max_occupancy' => 3,
+            'cover_image' => 'room2.jpg'
+        ]
+    ];
 }
 
-// 3. Regular Pages (Home, About, etc.)
+// 5. Automatically find and load the correct Controller or View file
+$controller_file = ROOT_DIR . "/app/controllers/{$route}Controller.php";
 $view_file = ROOT_DIR . "/app/views/{$route}.php";
-if (file_exists($view_file)) {
-    require_once $view_file;
-} else {
-    // Try to load a controller if view doesn't exist
-    $controller_file = ROOT_DIR . "/app/controllers/{$route}Controller.php";
-    if (file_exists($controller_file)) {
-        require_once $controller_file;
-    } else {
-        echo "404 - Page Not Found";
-    }
-}
+
+
 
 if (file_exists($controller_file)) {
     require_once $controller_file;
