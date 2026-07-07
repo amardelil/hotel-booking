@@ -12,7 +12,7 @@
     <header>
         <div class="container">
             <div class="logo">
-                <img src="/hotel-booking/public/uploads/images/logo.png" alt="Grand Ocean View Logo">
+                <img src="/uploads/images/logo.png" alt="Grand Ocean View Logo">
                 <h1>Grand Ocean View</h1>
             </div>
             <nav>

@@ -21,11 +21,14 @@ if ($base_script_path !== '/') {
 }
 
 
-$route = trim(parse_url($request_uri, PHP_URL_PATH), '/');
-if ($route === '') {
-    $route = 'home';
-}
+$path = trim(parse_url($request_uri, PHP_URL_PATH), '/');
+$segments = explode('/', $path);
+$route = $segments[0] ?: 'home';
 
+// If there is an ID (like room/1), pass it as a GET parameter
+if (isset($segments[1]) && is_numeric($segments[1])) {
+    $_GET['id'] = $segments[1];
+}
 // --- FETCH ROOMS (FORCED TO WORK) ---
 $rooms = []; // Always defined
 
