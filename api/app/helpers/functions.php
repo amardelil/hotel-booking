@@ -4,13 +4,11 @@
  */
 
 function url($path = '') {
-    // Always use the full base path for localhost
-    $base = '/hotel-booking/public';
-    return rtrim($base, '/') . '/' . ltrim($path, '/');
+    return '/'.ltrim($path,'/');
 }
 
 function asset($path) {
-    return '/hotel-booking/public/assets/' . ltrim($path, '/');
+    return '/assets/' .ltrim($path,'/');
 }
 
 function uploads($filename) {
