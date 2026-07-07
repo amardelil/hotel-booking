@@ -26,9 +26,26 @@ $segments = explode('/', $path);
 $route = $segments[0] ?: 'home';
 
 // If there is an ID (like room/1), pass it as a GET parameter
+error_log(" DEBUG: Request URI = " . $_SERVER['REQUEST_URI']);
+error_log(" DEBUG: Path = " . $path);
+error_log(" DEBUG: Route = " . $route);
 if (isset($segments[1]) && is_numeric($segments[1])) {
     $_GET['id'] = $segments[1];
 }
+// --- ADMIN ROUTING (CHECKED FIRST BEFORE ANY 404) ---
+if ($route === 'admin' || strpos($route, 'admin/') === 0) {
+    $admin_page = $segments[1] ?? 'login';
+    $admin_file = ROOT_DIR . "/app/views/admin/{$admin_page}.php";
+    if (file_exists($admin_file)) {
+        include ROOT_DIR . '/app/views/layout/header.php';
+        include $admin_file;
+        include ROOT_DIR . '/app/views/layout/footer.php';
+    } else {
+        echo "Admin page '{$admin_page}' not found. Create app/views/admin/{$admin_page}.php";
+    }
+    exit; // STOP HERE - DO NOT RUN 404 LOGIC
+}
+
 // --- FETCH ROOMS (FORCED TO WORK) ---
 $rooms = []; // Always defined
 
