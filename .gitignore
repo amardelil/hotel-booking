@@ -14,3 +14,4 @@ storage/logs/*.log
 
 # Ignore composer dependencies 
 /vendor/
+.vercel

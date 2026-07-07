@@ -13,8 +13,8 @@ function asset($path) {
     return '/hotel-booking/public/assets/' . ltrim($path, '/');
 }
 
-function uploads($path) {
-    return '/hotel-booking/public/uploads/' . ltrim($path, '/');
+function uploads($filename) {
+    return '/public/uploads/' . $filename;
 }
 
 function env($key, $default = null) {
