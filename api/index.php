@@ -4,9 +4,7 @@ ini_set('display_errors', 1);
 
 define('ROOT_DIR', __DIR__);
 define('APP_PATH', ROOT_DIR . '/app');
-
-// VERSION CHECK – we'll see this in logs and on /version
-define('APP_VERSION', '2026-07-08-FINAL');
+define('APP_VERSION', '2026-07-08-FINAL-V2');
 
 require_once ROOT_DIR . '/app/helpers/functions.php';
 require_once ROOT_DIR . '/app/config/database.php';
@@ -14,14 +12,14 @@ require_once ROOT_DIR . '/app/config/database.php';
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
 define('BASE_PATH', $protocol . $_SERVER['HTTP_HOST']);
 
-// --- Debug version route (to confirm deployment) ---
+// --- version route to confirm deployment ---
 if ($_SERVER['REQUEST_URI'] === '/version' || $_SERVER['REQUEST_URI'] === '/version/') {
     header('Content-Type: text/plain');
     echo APP_VERSION;
     exit;
 }
 
-// --- URI handling (fix for Vercel) ---
+// --- URI handling ---
 $request_uri = $_SERVER['REQUEST_URI'];
 if (getenv('VERCEL')) {
     $base_script_path = '';
@@ -71,10 +69,10 @@ if ($route === 'reserve') {
         $children       = (int)($_POST['children'] ?? 0);
         $guests         = $adults + $children;
 
-        // Force convert to valid date using strtotime (fallback to today)
+        // ---------- FORCE VALID DATES ----------
         $check_in_date  = date('Y-m-d', strtotime($check_in_str));
         $check_out_date = date('Y-m-d', strtotime($check_out_str));
-        // If conversion fails (1970-01-01), use today / tomorrow
+        // If conversion failed (1970-01-01), use today / tomorrow
         if ($check_in_date == '1970-01-01' || $check_in_date == '1969-12-31') {
             $check_in_date = date('Y-m-d');
         }
@@ -82,15 +80,15 @@ if ($route === 'reserve') {
             $check_out_date = date('Y-m-d', strtotime('+1 day'));
         }
 
-        // Basic validation: require name and email
+        // Log the actual dates to Vercel logs
+        error_log("RESERVATION: check_in=$check_in_date, check_out=$check_out_date, room=$room_id");
+
+        // Basic validation
         if (empty($customer_name) || empty($customer_email)) {
             http_response_code(400);
             echo "Name and email are required.";
             exit;
         }
-
-        // Log the dates to help debug (check Vercel logs)
-        error_log("Reservation dates: check_in=$check_in_date, check_out=$check_out_date");
 
         $stmt = mysqli_prepare($db,
             "INSERT INTO reservations 
@@ -99,7 +97,7 @@ if ($route === 'reserve') {
         );
         if (!$stmt) {
             http_response_code(500);
-            echo "Database prepare error: " . htmlspecialchars(mysqli_error($db));
+            echo "DB prepare error: " . htmlspecialchars(mysqli_error($db));
             exit;
         }
         $special_requests = '';
@@ -109,7 +107,7 @@ if ($route === 'reserve') {
             exit;
         } else {
             http_response_code(500);
-            echo "Reservation failed: " . htmlspecialchars(mysqli_stmt_error($stmt));
+            echo "Insert failed: " . htmlspecialchars(mysqli_stmt_error($stmt));
             exit;
         }
     } else {
