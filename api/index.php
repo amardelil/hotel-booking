@@ -1,4 +1,5 @@
 <?php
+echo "<!-- DEPLOYED VERSION: 2026-07-08-FINAL -->";
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 define('ROOT_DIR', __DIR__);
@@ -125,15 +126,10 @@ if ($route === 'admin') {
     }
     exit;
 }
-
-// --- RESERVATION HANDLER ---
-// --- RESERVATION HANDLER ---
+// --- RESERVATION HANDLER (FIXED) ---
 if ($route === 'reserve') {
-    // Only process POST requests
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         global $db;
-        
-        // Collect form data
         $room_id        = (int)($_POST['room_id'] ?? 0);
         $customer_name  = trim($_POST['customer_name'] ?? '');
         $customer_email = trim($_POST['customer_email'] ?? '');
@@ -144,29 +140,41 @@ if ($route === 'reserve') {
         $children       = (int)($_POST['children'] ?? 0);
         $guests         = $adults + $children;
 
-        // --- Validate required fields ---
+        // ---------- STRONG DATE VALIDATION ----------
         $errors = [];
-        if (empty($customer_name))  $errors[] = "Full name is required.";
-        if (empty($customer_email)) $errors[] = "Email is required.";
-        if (empty($check_in_str))   $errors[] = "Check-in date is required.";
-        if (empty($check_out_str))  $errors[] = "Check-out date is required.";
-        
-        // Validate date format (must be YYYY-MM-DD)
+        if (empty($customer_name))  $errors[] = "Full name required.";
+        if (empty($customer_email)) $errors[] = "Email required.";
+        if (empty($check_in_str))   $errors[] = "Check-in date required.";
+        if (empty($check_out_str))  $errors[] = "Check-out date required.";
+
+        // Must match YYYY-MM-DD exactly
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $check_in_str)) {
+            $errors[] = "Check-in must be in YYYY-MM-DD format.";
+        }
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $check_out_str)) {
+            $errors[] = "Check-out must be in YYYY-MM-DD format.";
+        }
+
+        // Also try to create DateTime objects to validate real dates
         $check_in  = DateTime::createFromFormat('Y-m-d', $check_in_str);
         $check_out = DateTime::createFromFormat('Y-m-d', $check_out_str);
-        if (!$check_in)  $errors[] = "Check-in date must be a valid date (YYYY-MM-DD).";
-        if (!$check_out) $errors[] = "Check-out date must be a valid date (YYYY-MM-DD).";
-        
-        // If there are errors, show them and stop
+        if (!$check_in)  $errors[] = "Invalid check-in date.";
+        if (!$check_out) $errors[] = "Invalid check-out date.";
+
+        // If errors, show them and stop
         if (!empty($errors)) {
             http_response_code(400);
             echo "<h3>Reservation failed:</h3><ul>";
             foreach ($errors as $err) echo "<li>" . htmlspecialchars($err) . "</li>";
-            echo "</ul><p><a href='javascript:history.back()'>Go back</a></p>";
+            echo "</ul><a href='javascript:history.back()'>Go back</a>";
             exit;
         }
 
-        // Now insert
+        // Now use the formatted date strings (these are guaranteed valid)
+        $check_in_date  = $check_in->format('Y-m-d');
+        $check_out_date = $check_out->format('Y-m-d');
+
+        // Insert
         $stmt = mysqli_prepare($db,
             "INSERT INTO reservations 
                 (room_id, guest_name, guest_email, guest_phone, check_in_date, check_out_date, guests, special_requests, created_at)
@@ -174,13 +182,13 @@ if ($route === 'reserve') {
         );
         if (!$stmt) {
             http_response_code(500);
-            echo "Database error: " . htmlspecialchars(mysqli_error($db));
+            echo "Database prepare error: " . htmlspecialchars(mysqli_error($db));
             exit;
         }
 
-        $special_requests = ''; // not used in form, keep empty
-        mysqli_stmt_bind_param($stmt, "issssiss", $room_id, $customer_name, $customer_email, $customer_phone, $check_in_str, $check_out_str, $guests, $special_requests);
-        
+        $special_requests = '';
+        mysqli_stmt_bind_param($stmt, "issssiss", $room_id, $customer_name, $customer_email, $customer_phone, $check_in_date, $check_out_date, $guests, $special_requests);
+
         if (mysqli_stmt_execute($stmt)) {
             header('Location: /success');
             exit;
@@ -190,7 +198,6 @@ if ($route === 'reserve') {
             exit;
         }
     } else {
-        // GET request – redirect to home
         header('Location: /');
         exit;
     }
