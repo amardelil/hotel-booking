@@ -1,22 +1,20 @@
 <?php
-// session_start() is already started in functions.php – DO NOT call it again.
+// session is already started in functions.php – do NOT call session_start() here
 require_once APP_PATH . '/config/database.php';
 
-// Handle login form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     global $db;
     $email = $_POST['email'] ?? '';
     $password = $_POST['password'] ?? '';
-    
-    // Prepare and execute query
+
     $stmt = mysqli_prepare($db, "SELECT * FROM admins WHERE email = ?");
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, "s", $email);
         mysqli_stmt_execute($stmt);
         $result = mysqli_stmt_get_result($stmt);
         $admin = mysqli_fetch_assoc($result);
-        
-        // Verify using password_verify() – we assume column is 'password_hash'
+
+        // Use password_verify with the column 'password_hash'
         if ($admin && password_verify($password, $admin['password_hash'])) {
             $_SESSION['admin_logged_in'] = true;
             $_SESSION['admin_email'] = $admin['email'];
@@ -26,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = "Invalid email or password";
         }
     } else {
-        $error = "Database error: " . mysqli_error($db);
+        $error = "Database error";
     }
 }
 ?>
@@ -42,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="login-box">
             <h2>Admin Login</h2>
             <?php if (isset($error)): ?>
-                <div style="color: red; margin-bottom: 10px;"><?php echo htmlspecialchars($error); ?></div>
+                <div style="color: red;"><?php echo htmlspecialchars($error); ?></div>
             <?php endif; ?>
             <form action="/admin/login" method="POST">
                 <div class="form-group">

@@ -1,26 +1,20 @@
 <?php
-/**
- * Helper functions - FIXED for XAMPP localhost
- */
-
 function url($path = '') {
-    return '/'.ltrim($path,'/');
+    return '/' . ltrim($path, '/');
 }
 
 function asset($path) {
-    return '/assets/' .ltrim($path,'/');
+    return '/assets/' . ltrim($path, '/');
 }
 
 function uploads($filename) {
-    return '/public/uploads/' . $filename;
+    // Direct path to public/uploads/
+    return '/public/uploads/' . ltrim($filename, '/');
 }
 
 function env($key, $default = null) {
     $value = getenv($key);
-    if ($value === false) {
-        return $default;
-    }
-    return $value;
+    return ($value === false) ? $default : $value;
 }
 
 function redirect($path) {
@@ -50,4 +44,3 @@ function formatDate($date, $format = 'm/d/Y') {
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-
