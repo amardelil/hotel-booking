@@ -1,6 +1,6 @@
 <?php
 define('ROOT_DIR', __DIR__);
-
+define('APP_PATH', ROOT_DIR . '/app');
 // ----- TEMPORARY DEBUG BLOCK (add this) -----
 if (isset($_GET['debug'])) {
     header('Content-Type: text/plain');
@@ -73,15 +73,21 @@ if (isset($_GET['debug_files'])) {
     exit;
 }
 // --- END DIAGNOSTIC TOOL ---
-
 // 4. Clean up the URL string to find which page the user wants to see
 $request_uri = $_SERVER['REQUEST_URI'];
-$base_script_path = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
 
-if ($base_script_path !== '/') {
-    if (strpos($request_uri, $base_script_path) === 0) {
-        $request_uri = substr($request_uri, strlen($base_script_path));
-    }
+// --- Fix for Vercel: SCRIPT_NAME is not reliable there ---
+if (getenv('VERCEL')) {
+    // On Vercel, do not strip anything – use the full request URI
+    $base_script_path = '';
+} else {
+    // On local XAMPP, strip the subfolder (e.g., /hotel-booking/api)
+    $base_script_path = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
+    if ($base_script_path === '/') $base_script_path = '';
+}
+
+if ($base_script_path && strpos($request_uri, $base_script_path) === 0) {
+    $request_uri = substr($request_uri, strlen($base_script_path));
 }
 
 $path = trim(parse_url($request_uri, PHP_URL_PATH), '/');
