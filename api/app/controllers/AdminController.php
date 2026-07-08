@@ -1,6 +1,6 @@
 <?php
-require_once APP_PATH . '/models/Reservation.php';
-require_once APP_PATH . '/models/Room.php';
+require_once APP_PATH . 'app/models/Reservation.php';
+require_once APP_PATH . 'app/models/Room.php';
 
 class AdminController {
     private $reservationModel;
