@@ -127,49 +127,68 @@ if ($route === 'admin') {
 }
 
 // --- RESERVATION HANDLER ---
+// --- RESERVATION HANDLER ---
 if ($route === 'reserve') {
     // Only process POST requests
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         global $db;
-        // Collect form data (matches room-detail.php field names)
-        $room_id      = $_POST['room_id'] ?? 0;
-        $customer_name   = $_POST['customer_name'] ?? '';
-        $customer_email  = $_POST['customer_email'] ?? '';
-        $customer_phone  = $_POST['customer_phone'] ?? '';
-        $check_in     = $_POST['check_in'] ?? '';
-        $check_out    = $_POST['check_out'] ?? '';
-        $adults       = $_POST['adults'] ?? 1;
-        $children     = $_POST['children'] ?? 0;
-        $guests       = $adults + $children;
+        
+        // Collect form data
+        $room_id        = (int)($_POST['room_id'] ?? 0);
+        $customer_name  = trim($_POST['customer_name'] ?? '');
+        $customer_email = trim($_POST['customer_email'] ?? '');
+        $customer_phone = trim($_POST['customer_phone'] ?? '');
+        $check_in_str   = trim($_POST['check_in'] ?? '');
+        $check_out_str  = trim($_POST['check_out'] ?? '');
+        $adults         = (int)($_POST['adults'] ?? 1);
+        $children       = (int)($_POST['children'] ?? 0);
+        $guests         = $adults + $children;
 
-        // Validate required fields
-        if (empty($customer_name) || empty($customer_email) || empty($check_in) || empty($check_out)) {
+        // --- Validate required fields ---
+        $errors = [];
+        if (empty($customer_name))  $errors[] = "Full name is required.";
+        if (empty($customer_email)) $errors[] = "Email is required.";
+        if (empty($check_in_str))   $errors[] = "Check-in date is required.";
+        if (empty($check_out_str))  $errors[] = "Check-out date is required.";
+        
+        // Validate date format (must be YYYY-MM-DD)
+        $check_in  = DateTime::createFromFormat('Y-m-d', $check_in_str);
+        $check_out = DateTime::createFromFormat('Y-m-d', $check_out_str);
+        if (!$check_in)  $errors[] = "Check-in date must be a valid date (YYYY-MM-DD).";
+        if (!$check_out) $errors[] = "Check-out date must be a valid date (YYYY-MM-DD).";
+        
+        // If there are errors, show them and stop
+        if (!empty($errors)) {
             http_response_code(400);
-            echo "All required fields must be filled.";
+            echo "<h3>Reservation failed:</h3><ul>";
+            foreach ($errors as $err) echo "<li>" . htmlspecialchars($err) . "</li>";
+            echo "</ul><p><a href='javascript:history.back()'>Go back</a></p>";
             exit;
         }
 
-        // Insert into reservations table
+        // Now insert
         $stmt = mysqli_prepare($db,
-            "INSERT INTO reservations (room_id, guest_name, guest_email, guest_phone, check_in_date, check_out_date, guests, special_requests, created_at)
+            "INSERT INTO reservations 
+                (room_id, guest_name, guest_email, guest_phone, check_in_date, check_out_date, guests, special_requests, created_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())"
         );
-        if ($stmt) {
-            $special_requests = ''; // not in form, but we can add later
-            mysqli_stmt_bind_param($stmt, "issssiss", $room_id, $customer_name, $customer_email, $customer_phone, $check_in, $check_out, $guests, $special_requests);
-            if (mysqli_stmt_execute($stmt)) {
-                header('Location: /success');
-                exit;
-            } else {
-                $error = "Reservation failed: " . mysqli_error($db);
-            }
-        } else {
-            $error = "Database prepare error: " . mysqli_error($db);
+        if (!$stmt) {
+            http_response_code(500);
+            echo "Database error: " . htmlspecialchars(mysqli_error($db));
+            exit;
         }
-        // If we get here, there was an error
-        http_response_code(500);
-        echo $error ?? 'Something went wrong.';
-        exit;
+
+        $special_requests = ''; // not used in form, keep empty
+        mysqli_stmt_bind_param($stmt, "issssiss", $room_id, $customer_name, $customer_email, $customer_phone, $check_in_str, $check_out_str, $guests, $special_requests);
+        
+        if (mysqli_stmt_execute($stmt)) {
+            header('Location: /success');
+            exit;
+        } else {
+            http_response_code(500);
+            echo "Reservation failed: " . htmlspecialchars(mysqli_stmt_error($stmt));
+            exit;
+        }
     } else {
         // GET request – redirect to home
         header('Location: /');
