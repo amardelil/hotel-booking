@@ -20,19 +20,16 @@ if ($base_script_path !== '/') {
     }
 }
 
-
 $path = trim(parse_url($request_uri, PHP_URL_PATH), '/');
 $segments = explode('/', $path);
 $route = $segments[0] ?: 'home';
 
-// If there is an ID (like room/1), pass it as a GET parameter
-error_log(" DEBUG: Request URI = " . $_SERVER['REQUEST_URI']);
-error_log(" DEBUG: Path = " . $path);
-error_log(" DEBUG: Route = " . $route);
-if (isset($segments[1]) && is_numeric($segments[1])) {
-    $_GET['id'] = $segments[1];
-}
-// --- ADMIN ROUTING (CHECKED FIRST BEFORE ANY 404) ---
+// --- DEBUG LOGS (Check Vercel Runtime Logs to confirm $route) ---
+error_log("🔍 DEBUG: Request URI = " . $_SERVER['REQUEST_URI']);
+error_log("🔍 DEBUG: Path = " . $path);
+error_log("🔍 DEBUG: Route = " . $route);
+
+// --- 1. ADMIN ROUTING (FIXES ADMIN LINK) ---
 if ($route === 'admin' || strpos($route, 'admin/') === 0) {
     $admin_page = $segments[1] ?? 'login';
     $admin_file = ROOT_DIR . "/app/views/admin/{$admin_page}.php";
@@ -43,18 +40,41 @@ if ($route === 'admin' || strpos($route, 'admin/') === 0) {
     } else {
         echo "Admin page '{$admin_page}' not found. Create app/views/admin/{$admin_page}.php";
     }
-    exit; // STOP HERE - DO NOT RUN 404 LOGIC
+    exit; // STOPS HERE - NO 404
 }
 
-// --- FETCH ROOMS (FORCED TO WORK) ---
-$rooms = []; // Always defined
+// --- 2. ROOM DETAILS ROUTING (FIXES VIEW DETAILS LINK) ---
+if ($route === 'room' && isset($segments[1]) && is_numeric($segments[1])) {
+    $room_id = (int)$segments[1];
+    $_GET['id'] = $room_id; // For your view to use
 
+    $result = mysqli_query($db, "SELECT * FROM rooms WHERE id = $room_id");
+    if ($result && $room = mysqli_fetch_assoc($result)) {
+        include ROOT_DIR . '/app/views/layout/header.php';
+        ?>
+        <div class="container" style="padding: 40px 0;">
+            <h1><?php echo $room['room_type']; ?></h1>
+            <img src="/uploads/<?php echo $room['cover_image']; ?>" alt="<?php echo $room['room_type']; ?>" style="width:100%; max-width:600px; border-radius:8px;">
+            <p style="margin: 20px 0;"><?php echo $room['description']; ?></p>
+            <p><strong>Price:</strong> $<?php echo number_format($room['price_per_night'], 2); ?> / night</p>
+            <p><strong>Capacity:</strong> <?php echo $room['max_occupancy']; ?> guests</p>
+            <a href="/" class="btn" style="display:inline-block; margin-top:20px;">Back to Home</a>
+        </div>
+        <?php
+        include ROOT_DIR . '/app/views/layout/footer.php';
+    } else {
+        echo "Room not found.";
+    }
+    exit; // STOPS HERE - NO 404
+}
+
+// --- FETCH ROOMS FOR HOMEPAGE ---
+$rooms = [];
 if ($route == 'home' && isset($db) && $db) {
     $result = mysqli_query($db, "SELECT * FROM rooms LIMIT 6");
     if ($result) {
         $rooms = mysqli_fetch_all($result, MYSQLI_ASSOC);
     } else {
-        // If query fails, log it and show dummy rooms so you see something
         error_log("Query failed: " . mysqli_error($db));
     }
 }
@@ -79,18 +99,16 @@ if (empty($rooms)) {
     ];
 }
 
-// 5. Automatically find and load the correct Controller or View file
+// --- NORMAL PAGE ROUTING (Home, Contact, etc.) ---
 $controller_file = ROOT_DIR . "/app/controllers/{$route}Controller.php";
 $view_file = ROOT_DIR . "/app/views/{$route}.php";
-
-
 
 if (file_exists($controller_file)) {
     require_once $controller_file;
 } elseif (file_exists($view_file)) {
     require_once $view_file;
 } else {
-    // If a room or page doesn't exist, show your 404 page safely
+    // Final 404 fallback
     $error_view = ROOT_DIR . '/app/views/404.php';
     if (file_exists($error_view)) {
         require_once $error_view;
@@ -99,3 +117,4 @@ if (file_exists($controller_file)) {
         echo "404 - Page Not Found";
     }
 }
+?>
