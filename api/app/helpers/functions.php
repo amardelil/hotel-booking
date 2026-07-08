@@ -2,26 +2,20 @@
 function url($path = '') {
     return '/' . ltrim($path, '/');
 }
-
 function asset($path) {
     return '/assets/' . ltrim($path, '/');
 }
-
 function uploads($filename) {
-    // Direct path to public/uploads/
     return '/public/uploads/' . ltrim($filename, '/');
 }
-
 function env($key, $default = null) {
     $value = getenv($key);
     return ($value === false) ? $default : $value;
 }
-
 function redirect($path) {
     header('Location: ' . url($path));
     exit;
 }
-
 function sessionFlash($key, $message = null) {
     if ($message !== null) {
         $_SESSION['flash'][$key] = $message;
@@ -31,16 +25,12 @@ function sessionFlash($key, $message = null) {
         return $msg;
     }
 }
-
 function formatPrice($amount) {
     return '$' . number_format($amount, 2);
 }
-
 function formatDate($date, $format = 'm/d/Y') {
     return date($format, strtotime($date));
 }
-
-// Start session if not started
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }

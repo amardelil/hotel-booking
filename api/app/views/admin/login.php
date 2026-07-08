@@ -1,5 +1,4 @@
 <?php
-// session is already started in functions.php – do NOT call session_start() here
 require_once APP_PATH . '/config/database.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -14,7 +13,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $result = mysqli_stmt_get_result($stmt);
         $admin = mysqli_fetch_assoc($result);
 
-        // Use password_verify with the column 'password_hash'
         if ($admin && password_verify($password, $admin['password_hash'])) {
             $_SESSION['admin_logged_in'] = true;
             $_SESSION['admin_email'] = $admin['email'];
