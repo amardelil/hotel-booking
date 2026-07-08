@@ -1,4 +1,6 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 define('ROOT_DIR', __DIR__);
 define('APP_PATH', ROOT_DIR . '/app');
 // ----- TEMPORARY DEBUG BLOCK (add this) -----
@@ -153,8 +155,7 @@ if (empty($rooms)) {
         ]
     ];
 }
-
-// 5. Load the correct Controller or View file
+// 5. Load and EXECUTE the Controller or fallback to View
 $controller_file = ROOT_DIR . "/app/controllers/" . ucfirst($route) . "Controller.php";
 $view_file = ROOT_DIR . "/app/views/{$route}.php";
 
@@ -163,8 +164,35 @@ error_log("DEBUG: view_file       = {$view_file} | exists=" . (is_file($view_fil
 
 if (is_file($controller_file)) {
     require_once $controller_file;
+    $class_name = ucfirst($route) . 'Controller';
+    if (class_exists($class_name)) {
+        $controller = new $class_name();
+        // Determine which method to call
+        $action = $segments[1] ?? 'index';
+        if (is_numeric($action)) {
+            // If the second segment is a number, call show($id)
+            if (method_exists($controller, 'show')) {
+                $controller->show($action);
+            } else {
+                http_response_code(500);
+                echo "Method show() not found in $class_name";
+            }
+        } elseif (method_exists($controller, $action)) {
+            $controller->$action();
+        } elseif (method_exists($controller, 'index')) {
+            $controller->index();
+        } else {
+            http_response_code(404);
+            echo "No suitable method in $class_name";
+        }
+    } else {
+        http_response_code(500);
+        echo "Class $class_name not found";
+    }
+    exit;
 } elseif (is_file($view_file)) {
     require_once $view_file;
+    exit;
 } else {
     $error_view = ROOT_DIR . '/app/views/404.php';
     if (is_file($error_view)) {
@@ -175,4 +203,5 @@ if (is_file($controller_file)) {
         echo "<!-- Looked for controller: {$controller_file} and view: {$view_file} -->";
         echo "<!-- Visit /?debug_files=1 to see the actual deployed file tree -->";
     }
+    exit;
 }
