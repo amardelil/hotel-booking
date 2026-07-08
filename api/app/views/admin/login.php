@@ -1,5 +1,5 @@
 <?php
-session_start();
+// session_start() is already started in functions.php – DO NOT call it again.
 require_once APP_PATH . '/config/database.php';
 
 // Handle login form submission
@@ -16,8 +16,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $result = mysqli_stmt_get_result($stmt);
         $admin = mysqli_fetch_assoc($result);
         
-        // Verify password (plain text for now – use password_verify() if hashed)
-        if ($admin && $password === $admin['password']) {
+        // Verify using password_verify() – we assume column is 'password_hash'
+        if ($admin && password_verify($password, $admin['password_hash'])) {
             $_SESSION['admin_logged_in'] = true;
             $_SESSION['admin_email'] = $admin['email'];
             header('Location: /admin/dashboard');

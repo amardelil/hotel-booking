@@ -126,6 +126,56 @@ if ($route === 'admin') {
     exit;
 }
 
+// --- RESERVATION HANDLER ---
+if ($route === 'reserve') {
+    // Only process POST requests
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        global $db;
+        // Collect form data (matches room-detail.php field names)
+        $room_id      = $_POST['room_id'] ?? 0;
+        $customer_name   = $_POST['customer_name'] ?? '';
+        $customer_email  = $_POST['customer_email'] ?? '';
+        $customer_phone  = $_POST['customer_phone'] ?? '';
+        $check_in     = $_POST['check_in'] ?? '';
+        $check_out    = $_POST['check_out'] ?? '';
+        $adults       = $_POST['adults'] ?? 1;
+        $children     = $_POST['children'] ?? 0;
+        $guests       = $adults + $children;
+
+        // Validate required fields
+        if (empty($customer_name) || empty($customer_email) || empty($check_in) || empty($check_out)) {
+            http_response_code(400);
+            echo "All required fields must be filled.";
+            exit;
+        }
+
+        // Insert into reservations table
+        $stmt = mysqli_prepare($db,
+            "INSERT INTO reservations (room_id, guest_name, guest_email, guest_phone, check_in_date, check_out_date, guests, special_requests, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())"
+        );
+        if ($stmt) {
+            $special_requests = ''; // not in form, but we can add later
+            mysqli_stmt_bind_param($stmt, "issssiss", $room_id, $customer_name, $customer_email, $customer_phone, $check_in, $check_out, $guests, $special_requests);
+            if (mysqli_stmt_execute($stmt)) {
+                header('Location: /success');
+                exit;
+            } else {
+                $error = "Reservation failed: " . mysqli_error($db);
+            }
+        } else {
+            $error = "Database prepare error: " . mysqli_error($db);
+        }
+        // If we get here, there was an error
+        http_response_code(500);
+        echo $error ?? 'Something went wrong.';
+        exit;
+    } else {
+        // GET request – redirect to home
+        header('Location: /');
+        exit;
+    }
+}
 // --- FETCH ROOMS ---
 $rooms = [];
 if ($route == 'home' && isset($db) && $db) {
