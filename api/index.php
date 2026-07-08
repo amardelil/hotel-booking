@@ -1,7 +1,47 @@
 <?php
-// 1. Automatically fix all folder link distances from this file
 define('ROOT_DIR', __DIR__);
 
+// ----- TEMPORARY DEBUG BLOCK (add this) -----
+if (isset($_GET['debug'])) {
+    header('Content-Type: text/plain');
+    $request_uri = $_SERVER['REQUEST_URI'];
+    $base = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
+    $uri = $request_uri;
+    if ($base !== '/') {
+        if (strpos($uri, $base) === 0) $uri = substr($uri, strlen($base));
+    }
+    $path = trim(parse_url($uri, PHP_URL_PATH), '/');
+    $segments = array_values(array_filter(explode('/', $path), fn($s) => $s !== ''));
+    $route = $segments[0] ?? 'home';
+    echo "REQUEST_URI: $request_uri\n";
+    echo "SCRIPT_NAME: " . $_SERVER['SCRIPT_NAME'] . "\n";
+    echo "Base stripped: $base\n";
+    echo "URI after strip: $uri\n";
+    echo "Path: $path\n";
+    echo "Segments: " . print_r($segments, true);
+    echo "Route: $route\n";
+    echo "ROOT_DIR: " . ROOT_DIR . "\n";
+    // Check admin file
+    if ($route === 'admin') {
+        $admin_page = basename($segments[1] ?? 'login');
+        $admin_file = ROOT_DIR . "/app/views/admin/{$admin_page}.php";
+        echo "admin_file: $admin_file\n";
+        echo "admin_file exists? " . (is_file($admin_file) ? 'YES' : 'NO') . "\n";
+    }
+    // Check controller/view for room
+    if ($route === 'room') {
+        $controller = ROOT_DIR . "/app/controllers/" . ucfirst($route) . "Controller.php";
+        $view = ROOT_DIR . "/app/views/{$route}.php";
+        echo "controller: $controller\n";
+        echo "controller exists? " . (is_file($controller) ? 'YES' : 'NO') . "\n";
+        echo "view: $view\n";
+        echo "view exists? " . (is_file($view) ? 'YES' : 'NO') . "\n";
+    }
+    exit;
+}
+// ----- END DEBUG BLOCK -----
+
+// then your existing code continues...
 // 2. Load your core system files safely using the new dynamic path
 require_once ROOT_DIR . '/app/helpers/functions.php';
 require_once ROOT_DIR . '/app/config/database.php';
