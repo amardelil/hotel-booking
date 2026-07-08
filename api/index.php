@@ -109,7 +109,7 @@ if (empty($rooms)) {
 }
 
 // 5. Load the correct Controller or View file
-$controller_file = ROOT_DIR . "/app/controllers/" . ucfirst($route) .Controller.php";
+$controller_file = ROOT_DIR . "/app/controllers/" . ucfirst($route) .Controller.php;
 $view_file = ROOT_DIR . "/app/views/{$route}.php";
 
 error_log("DEBUG: controller_file = {$controller_file} | exists=" . (is_file($controller_file) ? 'YES' : 'NO'));
