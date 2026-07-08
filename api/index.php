@@ -101,6 +101,7 @@ if ($route === 'reserve') {
             exit;
         }
         $special_requests = '';
+        echo "DEBUG: check_in_date=$check_in_date, check_out_date=$check_out_date<br>";
         mysqli_stmt_bind_param($stmt, "issssiss", $room_id, $customer_name, $customer_email, $customer_phone, $check_in_date, $check_out_date, $guests, $special_requests);
         if (mysqli_stmt_execute($stmt)) {
             header('Location: /success');

@@ -6,7 +6,8 @@ function asset($path) {
     return '/assets/' . ltrim($path, '/');
 }
 function uploads($filename) {
-    return '/public/uploads/' . ltrim($filename, '/');
+    // Use BASE_PATH to build absolute URL
+    return BASE_PATH . '/public/uploads/' . ltrim($filename, '/');
 }
 function env($key, $default = null) {
     $value = getenv($key);
