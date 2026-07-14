@@ -6,7 +6,10 @@ function asset($path) {
     return '/assets/' . ltrim($path, '/');
 }
 function uploads($filename) {
-    // Use BASE_PATH to build absolute URL
+    if (!defined('BASE_PATH')) {
+        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
+        define('BASE_PATH', $protocol . $_SERVER['HTTP_HOST']);
+    }
     return BASE_PATH . '/public/uploads/' . ltrim($filename, '/');
 }
 function env($key, $default = null) {

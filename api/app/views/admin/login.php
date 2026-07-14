@@ -13,6 +13,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $result = mysqli_stmt_get_result($stmt);
         $admin = mysqli_fetch_assoc($result);
 
+        // --- DEBUG ---
+        error_log("Login attempt for email: " . $email);
+        error_log("Hash from DB: " . ($admin['password_hash'] ?? 'NULL'));
+        error_log("Password entered: " . $password);
+        error_log("password_verify result: " . (password_verify($password, $admin['password_hash']) ? 'true' : 'false'));
+        // --- END DEBUG ---
+
         if ($admin && password_verify($password, $admin['password_hash'])) {
             $_SESSION['admin_logged_in'] = true;
             $_SESSION['admin_email'] = $admin['email'];
