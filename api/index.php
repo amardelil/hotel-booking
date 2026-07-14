@@ -1,4 +1,26 @@
 <?php
+// --- SERVE STATIC FILES (images, CSS, JS) ---
+$uri = $_SERVER['REQUEST_URI'];
+$path = parse_url($uri, PHP_URL_PATH);
+if (strpos($path, '/public/') === 0) {
+    $file = __DIR__ . '/..' . $path;  // go up one level to project root
+    if (file_exists($file)) {
+        $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+        $mime = [
+            'jpg'  => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png'  => 'image/png',
+            'gif'  => 'image/gif',
+            'css'  => 'text/css',
+            'js'   => 'application/javascript',
+            'svg'  => 'image/svg+xml',
+        ];
+        if (isset($mime[$ext])) header('Content-Type: ' . $mime[$ext]);
+        readfile($file);
+        exit;
+    }
+}
+// --- END STATIC HANDLER ---
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
