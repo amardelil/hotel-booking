@@ -1,18 +1,13 @@
 {
   "functions": {
-    "api/index.php": {
+    "api/**/*.php": {
       "runtime": "vercel-php@0.7.2",
-      "includeFiles": "public/**"
+      "includeFiles": "app/**"
     }
   },
   "routes": [
-    {
-      "src": "/public/(.*)",
-      "dest": "/public/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/api/index.php"
-    }
+    { "src": "/assets/(.*)", "dest": "/public/assets/$1" },
+    { "src": "/uploads/(.*)", "dest": "/public/uploads/$1" },
+    { "src": "/(.*)", "dest": "/api/index.php" }
   ]
 }
