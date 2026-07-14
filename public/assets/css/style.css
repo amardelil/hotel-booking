@@ -73,7 +73,7 @@ header nav ul li a:hover {
 }
 
 /* Hero */
-.hero {
+.hero-section {
     height: 70vh;
     background-size: cover;
     background-position: center;
@@ -85,8 +85,7 @@ header nav ul li a:hover {
     color: #fff;
     position: relative;
 }
-
-.hero::before {
+.hero-section::before {
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
