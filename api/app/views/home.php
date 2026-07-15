@@ -9,7 +9,7 @@ include ROOT_DIR . '/app/views/layout/header.php';
     <div class="container">
         <h1>Where the Horizon Meets Your Peace.</h1>
         <p>Luxury beachfront resort in Miami Beach</p>
-        <a href="#rooms" class="btn">Explore Rooms</a>
+        <a href="#rooms" class="btn" onclick="document.getElementById('rooms').scrollIntoView({behavior:'smooth'}); return false;">Explore Rooms</a>
     </div>
 </section>
 
