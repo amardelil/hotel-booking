@@ -77,7 +77,9 @@ header nav ul li a:hover {
     height: 70vh;
     background-size: cover;
     background-position: center;
-    background-image: url('/public/uploads/exterior.jpg');
+    background-image: 
+        linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)),
+        url('/public/uploads/exterior.jpg');
     display: flex;
     align-items: center;
     justify-content: center;

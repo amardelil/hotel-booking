@@ -36,8 +36,6 @@ include ROOT_DIR . '/app/views/layout/header.php';
         </div>
     </div>
 </section>
-
-
 <?php
 // 2. Load the Footer
 include ROOT_DIR . '/app/views/layout/footer.php';
