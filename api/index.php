@@ -66,17 +66,25 @@ if ($route === 'admin') {
     $header_file = ROOT_DIR . '/app/views/layout/header.php';
     $footer_file = ROOT_DIR . '/app/views/layout/footer.php';
 
-    if (is_file($admin_file)) {
-        if (is_file($header_file)) include $header_file;
+    // If it's a POST request to login, handle it BEFORE any output
+    if ($admin_page === 'login' && $_SERVER['REQUEST_METHOD'] === 'POST' && is_file($admin_file)) {
+        // Process the login (this file contains the POST handling)
         include $admin_file;
+        // If we reached here, login failed (success would have exited with redirect)
+        // Now we need to display the login form with error – but we must not re-process POST
+        unset($_POST);
+        if (is_file($header_file)) include $header_file;
+        if (is_file($admin_file)) include $admin_file;
         if (is_file($footer_file)) include $footer_file;
-    } else {
-        http_response_code(500);
-        echo "Admin view not found: $admin_file";
+        exit;
     }
+
+    // For GET requests or other admin pages: include header, view, footer
+    if (is_file($header_file)) include $header_file;
+    if (is_file($admin_file)) include $admin_file;
+    if (is_file($footer_file)) include $footer_file;
     exit;
 }
-
 // --- RESERVATION HANDLER (ULTRA SAFE) ---
 if ($route === 'reserve') {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -123,7 +131,6 @@ if ($route === 'reserve') {
             exit;
         }
         $special_requests = '';
-        echo "DEBUG: check_in_date=$check_in_date, check_out_date=$check_out_date<br>";
         mysqli_stmt_bind_param($stmt, "issssiss", $room_id, $customer_name, $customer_email, $customer_phone, $check_in_date, $check_out_date, $guests, $special_requests);
         if (mysqli_stmt_execute($stmt)) {
             header('Location: /success');
