@@ -9,7 +9,7 @@ include ROOT_DIR . '/app/views/layout/header.php';
     <div class="container">
         <h1>Where the Horizon Meets Your Peace.</h1>
         <p>Luxury beachfront resort in Miami Beach</p>
-        <a href="#rooms" class="btn" onclick="document.getElementById('rooms').scrollIntoView({behavior:'smooth'}); return false;">Explore Rooms</a>
+        <a href="#rooms" class="btn">Explore Rooms</a>
     </div>
 </section>
 
@@ -37,22 +37,7 @@ include ROOT_DIR . '/app/views/layout/header.php';
     </div>
 </section>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    var btn = document.querySelector('a[href="#rooms"]');
-    if (btn) {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault(); // prevent default anchor behavior
-            var target = document.getElementById('rooms');
-            if (target) {
-                var offset = 70; // adjust if you have a fixed header
-                var top = target.getBoundingClientRect().top + window.pageYOffset - offset;
-                window.scrollTo({ top: top, behavior: 'smooth' });
-            }
-        });
-    }
-});
-</script>
+
 <?php
 // 2. Load the Footer
 include ROOT_DIR . '/app/views/layout/footer.php';
