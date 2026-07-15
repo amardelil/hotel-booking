@@ -85,7 +85,7 @@ if ($route === 'admin') {
     if (is_file($footer_file)) include $footer_file;
     exit;
 }
-// --- RESERVATION HANDLER (FIXED FOR TABLE COLUMNS) ---
+// --- RESERVATION HANDLER (FINAL FIX) ---
 if ($route === 'reserve') {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         global $db;
@@ -111,7 +111,7 @@ if ($route === 'reserve') {
         if ($check_in_date == '1970-01-01') $check_in_date = date('Y-m-d');
         if ($check_out_date == '1970-01-01') $check_out_date = date('Y-m-d', strtotime('+1 day'));
 
-        // --- Get room price to calculate total ---
+        // --- Get room price for total ---
         $room_price = 0;
         $stmt_price = mysqli_prepare($db, "SELECT price_per_night FROM rooms WHERE id = ?");
         if ($stmt_price) {
@@ -123,16 +123,15 @@ if ($route === 'reserve') {
             mysqli_stmt_close($stmt_price);
         }
 
-        // Calculate number of nights and total price
         $nights = (strtotime($check_out_date) - strtotime($check_in_date)) / (60 * 60 * 24);
         $total_price = $nights * $room_price;
         if ($total_price < 0) $total_price = 0;
 
-        // --- Insert into reservations ---
+        // --- Insert into all required columns ---
         $stmt = mysqli_prepare($db,
             "INSERT INTO reservations 
-                (room_id, customer_name, customer_email, customer_phone, check_in_date, check_out_date, adults, children, total_price, status, reservation_type, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'online', NOW())"
+                (room_id, customer_name, customer_email, customer_phone, check_in_date, check_out_date, adults, children, total_price, guest_name, guest_email, guest_phone, guests, status, reservation_type, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'online', NOW())"
         );
         if (!$stmt) {
             http_response_code(500);
@@ -140,7 +139,23 @@ if ($route === 'reserve') {
             exit;
         }
 
-mysqli_stmt_bind_param($stmt, "sssssssss", $room_id, $customer_name, $customer_email, $customer_phone, $check_in_date, $check_out_date, $adults, $children, $total_price);
+        // Bind: 13 placeholders – all strings (sssssssssssss)
+        mysqli_stmt_bind_param($stmt, "sssssssssssss",
+            $room_id,                // 1
+            $customer_name,          // 2
+            $customer_email,         // 3
+            $customer_phone,         // 4
+            $check_in_date,          // 5
+            $check_out_date,         // 6
+            $adults,                 // 7
+            $children,               // 8
+            $total_price,            // 9
+            $customer_name,          // 10: guest_name = customer_name
+            $customer_email,         // 11: guest_email = customer_email
+            $customer_phone,         // 12: guest_phone = customer_phone
+            ($adults + $children)    // 13: guests = adults + children
+        );
+
         if (mysqli_stmt_execute($stmt)) {
             header('Location: /success');
             exit;
@@ -154,7 +169,6 @@ mysqli_stmt_bind_param($stmt, "sssssssss", $room_id, $customer_name, $customer_e
         exit;
     }
 }
-
 // --- FETCH ROOMS for homepage ---
 $rooms = [];
 if ($route === 'home' && isset($db) && $db) {
