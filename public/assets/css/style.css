@@ -87,11 +87,11 @@ header nav ul li a:hover {
     color: #fff;
     position: relative;
 }
-.hero-section::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(26, 42, 58, 0.5);
+.hero-section h1,
+.hero-section p,
+.hero-section .btn {
+    color: #fff;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.6);
 }
 
 .hero-content {
