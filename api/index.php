@@ -85,7 +85,7 @@ if ($route === 'admin') {
     if (is_file($footer_file)) include $footer_file;
     exit;
 }
-// --- RESERVATION HANDLER (FINAL FIX) ---
+// --- RESERVATION HANDLER (CORRECTED BIND) ---
 if ($route === 'reserve') {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         global $db;
@@ -127,6 +127,9 @@ if ($route === 'reserve') {
         $total_price = $nights * $room_price;
         if ($total_price < 0) $total_price = 0;
 
+        // --- Prepare the guest total ---
+        $total_guests = $adults + $children;  // store in variable
+
         // --- Insert into all required columns ---
         $stmt = mysqli_prepare($db,
             "INSERT INTO reservations 
@@ -139,21 +142,25 @@ if ($route === 'reserve') {
             exit;
         }
 
-        // Bind: 13 placeholders – all strings (sssssssssssss)
-        mysqli_stmt_bind_param($stmt, "sssssssssssss",
-            $room_id,                // 1
-            $customer_name,          // 2
-            $customer_email,         // 3
-            $customer_phone,         // 4
-            $check_in_date,          // 5
-            $check_out_date,         // 6
-            $adults,                 // 7
-            $children,               // 8
-            $total_price,            // 9
-            $customer_name,          // 10: guest_name = customer_name
-            $customer_email,         // 11: guest_email = customer_email
-            $customer_phone,         // 12: guest_phone = customer_phone
-            ($adults + $children)    // 13: guests = adults + children
+        // Bind parameters: 13 placeholders (room_id, customer_name, customer_email, customer_phone, check_in_date, check_out_date, adults, children, total_price, guest_name, guest_email, guest_phone, guests)
+        // We'll use all strings to avoid type issues (or 's' for all).
+        // The number of variables must match 13.
+        // We'll put them in an array and use call_user_func_array if needed, but simple is better:
+        mysqli_stmt_bind_param($stmt, 
+            "sssssssssssss", 
+            $room_id, 
+            $customer_name, 
+            $customer_email, 
+            $customer_phone, 
+            $check_in_date, 
+            $check_out_date, 
+            $adults, 
+            $children, 
+            $total_price, 
+            $customer_name,   // guest_name
+            $customer_email,  // guest_email
+            $customer_phone,  // guest_phone
+            $total_guests     // guests
         );
 
         if (mysqli_stmt_execute($stmt)) {
