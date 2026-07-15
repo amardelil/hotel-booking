@@ -140,8 +140,7 @@ if ($route === 'reserve') {
             exit;
         }
 
-        mysqli_stmt_bind_param($stmt, "issssiii", $room_id, $customer_name, $customer_email, $customer_phone, $check_in_date, $check_out_date, $adults, $children, $total_price);
-
+mysqli_stmt_bind_param($stmt, "sssssssss", $room_id, $customer_name, $customer_email, $customer_phone, $check_in_date, $check_out_date, $adults, $children, $total_price);
         if (mysqli_stmt_execute($stmt)) {
             header('Location: /success');
             exit;
