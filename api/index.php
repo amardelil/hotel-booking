@@ -85,7 +85,7 @@ if ($route === 'admin') {
     if (is_file($footer_file)) include $footer_file;
     exit;
 }
-// --- RESERVATION HANDLER (ULTRA SAFE) ---
+// --- RESERVATION HANDLER (FIXED FOR TABLE COLUMNS) ---
 if ($route === 'reserve') {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         global $db;
@@ -97,47 +97,57 @@ if ($route === 'reserve') {
         $check_out_str  = trim($_POST['check_out'] ?? '');
         $adults         = (int)($_POST['adults'] ?? 1);
         $children       = (int)($_POST['children'] ?? 0);
-        $guests         = $adults + $children;
 
-        // ---------- FORCE VALID DATES ----------
-        $check_in_date  = date('Y-m-d', strtotime($check_in_str));
-        $check_out_date = date('Y-m-d', strtotime($check_out_str));
-        // If conversion failed (1970-01-01), use today / tomorrow
-        if ($check_in_date == '1970-01-01' || $check_in_date == '1969-12-31') {
-            $check_in_date = date('Y-m-d');
-        }
-        if ($check_out_date == '1970-01-01' || $check_out_date == '1969-12-31') {
-            $check_out_date = date('Y-m-d', strtotime('+1 day'));
-        }
-
-        // Log the actual dates to Vercel logs
-        error_log("RESERVATION: check_in=$check_in_date, check_out=$check_out_date, room=$room_id");
-
-        // Basic validation
-        if (empty($customer_name) || empty($customer_email)) {
+        // --- Validate ---
+        if (empty($customer_name) || empty($customer_email) || empty($check_in_str) || empty($check_out_str)) {
             http_response_code(400);
-            echo "Name and email are required.";
+            echo "All required fields must be filled.";
             exit;
         }
 
+        // --- Convert dates ---
+        $check_in_date  = date('Y-m-d', strtotime($check_in_str));
+        $check_out_date = date('Y-m-d', strtotime($check_out_str));
+        if ($check_in_date == '1970-01-01') $check_in_date = date('Y-m-d');
+        if ($check_out_date == '1970-01-01') $check_out_date = date('Y-m-d', strtotime('+1 day'));
+
+        // --- Get room price to calculate total ---
+        $room_price = 0;
+        $stmt_price = mysqli_prepare($db, "SELECT price_per_night FROM rooms WHERE id = ?");
+        if ($stmt_price) {
+            mysqli_stmt_bind_param($stmt_price, "i", $room_id);
+            mysqli_stmt_execute($stmt_price);
+            $result_price = mysqli_stmt_get_result($stmt_price);
+            $room_data = mysqli_fetch_assoc($result_price);
+            $room_price = $room_data['price_per_night'] ?? 0;
+            mysqli_stmt_close($stmt_price);
+        }
+
+        // Calculate number of nights and total price
+        $nights = (strtotime($check_out_date) - strtotime($check_in_date)) / (60 * 60 * 24);
+        $total_price = $nights * $room_price;
+        if ($total_price < 0) $total_price = 0;
+
+        // --- Insert into reservations ---
         $stmt = mysqli_prepare($db,
             "INSERT INTO reservations 
-                (room_id, guest_name, guest_email, guest_phone, check_in_date, check_out_date, guests, special_requests, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())"
+                (room_id, customer_name, customer_email, customer_phone, check_in_date, check_out_date, adults, children, total_price, status, reservation_type, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'online', NOW())"
         );
         if (!$stmt) {
             http_response_code(500);
-            echo "DB prepare error: " . htmlspecialchars(mysqli_error($db));
+            echo "DB prepare error: " . mysqli_error($db);
             exit;
         }
-        $special_requests = '';
-        mysqli_stmt_bind_param($stmt, "issssiss", $room_id, $customer_name, $customer_email, $customer_phone, $check_in_date, $check_out_date, $guests, $special_requests);
+
+        mysqli_stmt_bind_param($stmt, "issssiii", $room_id, $customer_name, $customer_email, $customer_phone, $check_in_date, $check_out_date, $adults, $children, $total_price);
+
         if (mysqli_stmt_execute($stmt)) {
             header('Location: /success');
             exit;
         } else {
             http_response_code(500);
-            echo "Insert failed: " . htmlspecialchars(mysqli_stmt_error($stmt));
+            echo "Insert failed: " . mysqli_stmt_error($stmt);
             exit;
         }
     } else {
